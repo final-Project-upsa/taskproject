@@ -1,0 +1,12 @@
+Welcome to {{ organization }}!
+
+Hello,
+
+{% comment %} {{ inviter }} has invited you to join {{ organization }} as a {{ role }}. {% endcomment %}
+
+You have succesfully completed your registration and now a member of {{ organization }}
+
+
+This invitation will expire on {{ expiry_date }}.
+
+If you did not complete this invitation, please contact us immediately.

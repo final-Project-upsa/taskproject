@@ -1,0 +1,13 @@
+Welcome to {{ organization }}!
+
+Hello,
+
+{{ inviter }} has invited you to join {{ organization }} as a {{ role }}.
+
+To complete your registration, please click the link below:
+
+{{ registration_link }}
+
+This invitation will expire on {{ expiry_date }}.
+
+If you did not expect this invitation, please ignore this email.

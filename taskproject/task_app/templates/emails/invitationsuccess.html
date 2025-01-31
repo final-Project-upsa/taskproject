@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% comment %} <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { padding: 20px; }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style> {% endcomment %}
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome to {{ organization }}!</h2>
+        <p>Hello, {{ email }}</p>
+        {% comment %} <p>{{ inviter }} has invited you to join {{ organization }} as a {{ role }}.</p> {% endcomment %}
+        <p>You have succesfully completed your registration and now a member of {{ organization }}</p>
+        
+        <p>This invitation will expire on {{ expiry_date }}.</p>
+        <p>If you did not complete this invitation, contact us immediately.</p>
+    </div>  
+</body>
+</html>

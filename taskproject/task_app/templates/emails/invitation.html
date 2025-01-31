@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { padding: 20px; }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome to {{ organization }}!</h2>
+        <p>Hello,</p>
+        <p>{{ inviter }} has invited you to join {{ organization }} as a {{ role }}.</p>
+        <p>To complete your registration, please click the button below:</p>
+        <p>
+            <a href="{{ registration_link }}" class="button">Complete Registration</a>
+        </p>
+        <p>This invitation will expire on {{ expiry_date }}.</p>
+        <p>If you did not expect this invitation, please ignore this email.</p>
+    </div>
+</body>
+</html>
