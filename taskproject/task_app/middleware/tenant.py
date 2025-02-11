@@ -20,11 +20,11 @@ class TenantMiddleware:
                 subdomain=subdomain,
                 is_active=True
             )
-            print("Middleware found organization:", type(org))
-            print("Middleware organization ID:", org.id)
+            # print("Middleware found organization:", type(org))
+            # print("Middleware organization ID:", org.id)
             request.organization = org
-            print("Middleware set request.organization type:", type(request.organization))
-            print("Middleware set request.organization ID:", request.organization.id)
+            # print("Middleware set request.organization type:", type(request.organization))
+            # print("Middleware set request.organization ID:", request.organization.id)
         except Organization.DoesNotExist:
             return HttpResponseNotFound("Organization not found")
 

@@ -3,10 +3,14 @@ from rest_framework.routers import DefaultRouter
 from .views import UserViewSet
 from . import views 
 from rest_framework_simplejwt.views import TokenRefreshView
-from .viewfunctions import profileviews, departmentviews, taskviews, dashboardviews
+from .viewfunctions import profileviews, departmentviews, taskviews, dashboardviews, chatviews
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
+
+chat_router = DefaultRouter()
+chat_router.register(r'chats', chatviews.ChatViewSet, basename='chat')
+chat_router.register(r'chats/(?P<chat_id>\d+)/messages', chatviews.MessageViewSet, basename='message')
 
 urlpatterns = [
     #===========================AUTH & ORG_USER-CREATION=========================================================
@@ -28,6 +32,7 @@ urlpatterns = [
     #============================PROFILE MANAGER=================================================================
     path('profile/', profileviews.manage_profile, name='manage-profile'),
     path('profile/change-password/', profileviews.change_password, name='change-password'),
+    path('current-user/', profileviews.current_user, name='current_user'),
     #=============================================================================================================
     
     #==============================DEPARTMENTS MANAGER============================================================
@@ -54,4 +59,10 @@ urlpatterns = [
     #==============================Dashboard==================================================================
     path('organization/team/', dashboardviews.OrganizationTeamView.as_view(), name='organization-team'),
     path('user/dashboard/', dashboardviews.user_dashboard, name='user-dashboard'),
+    #============================================================================================================
+    
+    
+    #=================================Chat==============================================================
+    path('', include(chat_router.urls)),
+    path('chats/<int:pk>/mark-read/', chatviews.ChatViewSet.as_view({'post': 'mark_read'}), name='chat-mark-read'),
 ]

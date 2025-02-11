@@ -10,6 +10,8 @@ import EmployeeRegistration from './components/EmployeeRegistration';
 import TaskTab from './components/Dashboard_Components/TaskTab_Components/TaskTab';
 import TeamTab from './components/Dashboard_Components/TeamTab_Components/TeamTab';
 import TaskExpandPage from './components/Dashboard_Components/TaskTab_Components/TaskExpand_Components/TaskExpandPage';
+import ResponsiveCalendarTab from './components/Dashboard_Components/CalendarTab_Components/ResponsiveCalendarTab';
+import MessageTab from './components/Dashboard_Components/MessageTab_Components/MessageTab';
 
 
 // Protected Route wrapper component
@@ -65,6 +67,8 @@ function App() {
                 <Route path="team" element={<TeamTab />} />
                 <Route path="tasks" element={<TaskTab />} />
                 <Route path="tasks/expand/:taskID" element={<TaskExpandPage />} />
+                <Route path="calendar" element={<ResponsiveCalendarTab />} />
+                <Route path="messages" element={<MessageTab />} />
               </Routes>
             </DashboardLayout>
           </ProtectedRoute>

@@ -13,6 +13,13 @@ class TaskStatus(models.TextChoices):
     REVIEW = 'REVIEW', 'Under Review'
     COMPLETED = 'COMPLETED', 'Completed'
     ARCHIVED = 'ARCHIVED', 'Archived'
+    
+class TaskType(models.TextChoices):
+    PERSONAL = 'PERSONAL', 'Personal'
+    MEETING = 'MEETING', 'Meeting'
+    PROJECT = 'PROJECT', 'Project'
+    DEADLINE = 'DEADLINE', 'Deadline'
+    REMINDER = 'REMINDER', 'Reminder'
 
 class Task(models.Model):
     title = models.CharField(max_length=200)
@@ -20,10 +27,11 @@ class Task(models.Model):
     organization = models.ForeignKey('task_app.Organization', on_delete=models.CASCADE, related_name='tasks')
     department = models.ForeignKey('task_app.Department', on_delete=models.CASCADE, related_name='tasks', null=True, blank=True)  
     created_by = models.ForeignKey('task_app.CustomUser', on_delete=models.CASCADE, related_name='created_tasks')
-    assigned_by = models.ForeignKey('task_app.CustomUser',on_delete=models.SET_NULL, null=True, related_name='tasks_assigned', blank=True)
+    assigned_by = models.ForeignKey('task_app.CustomUser',on_delete=models.CASCADE, null=True, related_name='tasks_assigned', blank=True)
     assigned_to = models.ForeignKey('task_app.CustomUser', on_delete=models.CASCADE, related_name='assigned_tasks', null=True, blank=True) 
     priority = models.CharField(max_length=10, choices=TaskPriority.choices, default=TaskPriority.MEDIUM)
     status = models.CharField(max_length=15, choices=TaskStatus.choices, default=TaskStatus.TODO)
+    type = models.CharField(max_length=20, choices=TaskType.choices, default=TaskType.PERSONAL)
     due_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -31,11 +39,13 @@ class Task(models.Model):
     progress_percentage = models.IntegerField(default=0)
     last_updated_by = models.ForeignKey(
         'task_app.CustomUser', 
-        on_delete=models.SET_NULL, 
+        on_delete=models.CASCADE, 
         null=True, 
         related_name='last_updated_tasks'
     )
     completion_date = models.DateTimeField(null=True, blank=True)
+    time = models.TimeField(default='09:00', blank=True, null=True) 
+    duration = models.IntegerField(default=60, blank=True, null=True) 
 
     class Meta:
         ordering = ['-created_at']

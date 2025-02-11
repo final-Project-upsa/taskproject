@@ -1,0 +1,349 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import api from '../../../utils/api';
+
+// Extracted Week Selector Component
+const WeekSelector = ({ selectedDate, setSelectedDate }) => {
+  const goToPreviousWeek = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextWeek = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setSelectedDate(newDate);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={goToPreviousWeek}
+        className="p-2 hover:bg-gray-100 rounded-lg"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <button
+        onClick={goToNextWeek}
+        className="p-2 hover:bg-gray-100 rounded-lg"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+    </div>
+  );
+};
+
+// Extracted Month Year Selector Component
+const MonthYearSelector = ({ selectedDate, setSelectedDate }) => {
+  return (
+    <div className="text-lg font-semibold">
+      {selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+    </div>
+  );
+};
+
+const DesktopCalendarTab = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [newTask, setNewTask] = useState({ 
+    title: '', 
+    description: '', 
+    time: '', 
+    date: '', 
+    priority: 'MEDIUM',
+    duration: 60,
+    department: null
+  });
+
+  // Fetch tasks for the current week
+  useEffect(() => {
+    const fetchTasks = async () => {
+        setIsLoading(true);
+        try {
+            const weekStart = new Date(selectedDate);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            console.log('Fetching tasks for:', {
+                start: weekStart.toISOString().split('T')[0],
+                end: weekEnd.toISOString().split('T')[0]
+            });
+
+            const response = await api.get('/api/tasks/', {
+                params: {
+                    start_date: weekStart.toISOString().split('T')[0],
+                    end_date: weekEnd.toISOString().split('T')[0]
+                }
+            });
+
+            
+
+            const transformedTasks = response.data.map(task => ({
+                ...task,
+                time: task.time || '09:00',
+                duration: task.duration || 60
+            }));
+
+            
+            setTasks(transformedTasks);
+        } catch (error) {
+            console.error('Error fetching tasks:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchTasks();
+}, [selectedDate]);
+
+  // Generate 24-hour time slots (00:00 to 23:00)
+  const timeSlots = Array.from({ length: 24 }, (_, i) => {
+    return `${i.toString().padStart(2, '0')}:00`;
+  });
+
+  const getWeekDates = () => {
+    const dates = [];
+    const current = new Date(selectedDate);
+    current.setDate(current.getDate() - current.getDay() + 1);
+    
+    for (let i = 0; i < 7; i++) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  const getTaskBackgroundColor = (priority) => {
+    const colors = {
+      HIGH: 'bg-red-100 border-red-200 text-red-800',
+      MEDIUM: 'bg-orange-100 border-orange-200 text-orange-800',
+      LOW: 'bg-green-100 border-green-200 text-green-800'
+    };
+    return colors[priority] || 'bg-gray-100 border-gray-200 text-gray-800';
+  };
+
+  const getTaskPosition = (time) => {
+    const [hours] = time.split(':').map(Number);
+    return hours * 60;
+  };
+
+  const handleCreateTask = async () => {
+    try {
+      // Format the date and time properly
+      const taskData = {
+        ...newTask,
+        due_date: selectedCell.date,
+        time: selectedCell.time,
+        priority: newTask.priority,
+        department: newTask.department
+      };
+  
+      const response = await api.post('/api/tasks/create/', taskData);
+      
+      // Transform the new task to match the expected format
+      const newTaskWithFullData = {
+        ...response.data,
+        time: taskData.time,
+        duration: taskData.duration,
+        due_date: `${selectedCell.date}T${selectedCell.time}` // Format to match existing tasks
+      };
+      
+      // Update tasks state with the new task
+      setTasks(prevTasks => [...prevTasks, newTaskWithFullData]);
+      
+      // Close modal
+      setSelectedCell(null);
+      
+      // Reset new task form
+      setNewTask({ 
+        title: '', 
+        description: '', 
+        time: '', 
+        date: '', 
+        priority: 'MEDIUM',
+        duration: 60,
+        department: null
+      });
+    } catch (error) {
+      console.error('Error creating task:', error);
+      const errorMessage = error.response?.data?.error 
+        || Object.values(error.response?.data || {}).flat().join(', ')
+        || 'Unknown error';
+      alert(`Error creating task: ${errorMessage}`);
+    }
+  };
+ 
+
+  return (
+    <div className="h-screen max-h-[calc(100vh-4rem)] bg-white rounded-lg shadow-lg flex flex-col">
+      {/* Fixed top navigation */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center gap-4">
+          <MonthYearSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+          <WeekSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+        </div>
+      </div>
+
+      {/* Calendar container with synchronized scrolling */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Fixed date column */}
+        <div className="w-32 flex-none border-r border-gray-200">
+          {/* Empty cell above dates */}
+          <div className="h-10 bg-gray-50 border-b border-gray-200" />
+          
+          {/* Date cells */}
+          <div className="divide-y divide-gray-200">
+            {getWeekDates().map((date, index) => {
+              const isToday = date.toDateString() === new Date().toDateString();
+              return (
+                <div 
+                  key={index} 
+                  className={`h-24 p-4 ${isToday ? 'bg-indigo-50' : 'bg-gray-50'}`}
+                >
+                  <div className="font-medium">
+                    {date.toLocaleString('default', { weekday: 'short' })}
+                  </div>
+                  <div className={`text-2xl font-semibold ${
+                    isToday ? 'text-indigo-600' : 'text-gray-900'
+                  }`}>
+                    {date.getDate()}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Scrollable area for both headers and grid */}
+        <div className="flex-1 overflow-x-auto">
+          <div style={{ width: 'max-content' }}>
+            {/* Time headers */}
+            <div className="flex h-10 border-b border-gray-200 bg-white sticky top-0">
+              {timeSlots.map((time) => (
+                <div 
+                  key={time}
+                  className="w-32 flex-none border-r border-gray-200 flex items-center justify-center"
+                >
+                  <span className="text-xs font-medium text-gray-600">{time}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Time grid with tasks */}
+            {getWeekDates().map((date, dateIndex) => {
+              const dateStr = date.toISOString().split('T')[0];
+              
+              return (
+                <div key={dateIndex} className="relative flex border-b border-gray-200">
+                  {/* Time slots */}
+                  {timeSlots.map((time, timeIndex) => (
+                    <div 
+                      key={`${dateIndex}-${timeIndex}`}
+                      className="w-32 h-24 flex-none border-r border-gray-200 hover:bg-gray-50"
+                      onClick={() => setSelectedCell({ date: dateStr, time })}
+                    />
+                  ))}
+
+                  {/* Tasks for this day */}
+                    {tasks.filter(task => {
+                    
+                    
+                    const taskDate = task.due_date.split('T')[0];
+                    
+                    
+                    return taskDate === dateStr;
+                    }).map((task) => {
+                    const startMinutes = getTaskPosition(task.time);
+                    const leftPosition = (startMinutes / 60) * 128;
+                    const width = (task.duration / 60) * 128;
+                    
+                    
+  
+  return (
+    <div
+      key={task.id}
+      className={`absolute ${getTaskBackgroundColor(task.priority)} 
+        rounded-lg border p-2 shadow-sm cursor-pointer
+        hover:shadow-md transition-shadow`}
+      style={{
+        left: `${leftPosition}px`,
+        width: `${width - 4}px`,
+        top: '4px',
+        height: 'calc(100% - 8px)'
+      }}
+    >
+      <div className="font-medium text-xs truncate">{task.title}</div>
+      <div className="text-xs opacity-75 truncate">{task.description}</div>
+    </div>
+  );
+})}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Task Modal */}
+      {selectedCell && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96 shadow-xl">
+            <h2 className="text-xl font-bold mb-4">
+              Add Task for {selectedCell.time}
+            </h2>
+            <input
+              type="text"
+              placeholder="Task Title"
+              value={newTask.title}
+              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+              className="w-full p-3 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <textarea
+              placeholder="Task Description"
+              value={newTask.description}
+              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              className="w-full p-3 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows="3"
+            />
+            <select
+              value={newTask.priority}
+              onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+              className="w-full p-3 border rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="LOW">Low Priority</option>
+              <option value="MEDIUM">Medium Priority</option>
+              <option value="HIGH">High Priority</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Duration (minutes)"
+              value={newTask.duration}
+              onChange={(e) => setNewTask({ ...newTask, duration: parseInt(e.target.value) })}
+              className="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setSelectedCell(null)}
+                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTask}
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              >
+                Add Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DesktopCalendarTab;

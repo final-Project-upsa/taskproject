@@ -74,7 +74,9 @@ const EmployeeRegistration = () => {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone_number: formData.phone_number,
-        department: formData.department
+        department: invitationDetails.department,
+        role: invitationDetails.role,
+        email: invitationDetails.email
       });
 
       localStorage.setItem('access_token', response.data.tokens.access);
@@ -82,6 +84,7 @@ const EmployeeRegistration = () => {
 
       navigate('/dashboard');
     } catch (err) {
+      console.error('Full error response:', err.response?.data);
       setError(err.response?.data?.error || 'Registration failed');
     }
   };

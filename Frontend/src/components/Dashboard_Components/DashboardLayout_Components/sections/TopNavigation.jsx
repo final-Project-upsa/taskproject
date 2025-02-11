@@ -2,17 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Bell, Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import UserAvatar from './UserAvatar';
-
+import useNotificationStore from '../../../../stores/NotificationStore';
+import NotificationDropdown from '../../Add-ons/NotificationDropdown';
 
 const TopNavigation = ({ userData, isSidebarOpen, setIsSidebarOpen, handleLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationRef = useRef(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { notifications, unreadCount, markAllAsRead } = useNotificationStore();
 
-  // Handle click outside to close the dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
       }
     };
 
@@ -25,6 +31,7 @@ const TopNavigation = ({ userData, isSidebarOpen, setIsSidebarOpen, handleLogout
   return (
     <nav className="bg-white border-b px-4 py-2 fixed top-0 w-full z-20">
       <div className="flex items-center justify-between">
+        {/* Left side content */}
         <div className="flex items-center space-x-4">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden p-2 hover:bg-gray-100 rounded-lg">
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -40,15 +47,35 @@ const TopNavigation = ({ userData, isSidebarOpen, setIsSidebarOpen, handleLogout
           </div>
         </div>
 
+        {/* Right side content */}
         <div className="flex items-center space-x-4">
-          <button className="p-2 hover:bg-gray-100 rounded-lg relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          {/* Notification button and dropdown */}
+          <div className="relative" ref={notificationRef}>
+            <button 
+              className="p-2 hover:bg-gray-100 rounded-lg relative"
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                if (!showNotifications) markAllAsRead();
+              }}
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <NotificationDropdown 
+                notifications={notifications}
+                onClose={() => setShowNotifications(false)}
+              />
+            )}
+          </div>
 
-          {/* Normal Dropdown */}
+          {/* User dropdown */}
           <div className="relative" ref={dropdownRef}>
-            {/* Dropdown Trigger */}
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg p-2"
@@ -58,7 +85,6 @@ const TopNavigation = ({ userData, isSidebarOpen, setIsSidebarOpen, handleLogout
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </button>
 
-            {/* Dropdown Content */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5">
                 <div className="py-1">

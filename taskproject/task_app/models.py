@@ -132,7 +132,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ('H.O.D', 'H.O.D'),
         #will add more rroles lerra
     ]
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='employee')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE')
     
     # User Fields
     email = models.EmailField(unique=True)
@@ -170,7 +170,7 @@ class Invitation(models.Model):
     email = models.EmailField()
     role = models.CharField(max_length=20, choices=CustomUser.ROLE_CHOICES)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    invited_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    invited_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True)
     token = models.CharField(max_length=100, unique=True)
     is_used = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -181,3 +181,6 @@ class Invitation(models.Model):
         if not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(days=7)
         super().save(*args, **kwargs)
+        
+        
+        

@@ -23,7 +23,7 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const subdomain = getSubdomain();
-  console.log('Current subdomain for API request:', subdomain);
+  //console.log('Current subdomain for API request:', subdomain);
   
   // If we have a subdomain, modify the baseURL
   if (subdomain) {
@@ -36,7 +36,7 @@ api.interceptors.request.use((config) => {
     }
   }
 
-  console.log('Final API URL:', config.baseURL);
+  //console.log('Final API URL:', config.baseURL);
 
   const token = localStorage.getItem('access_token');
   if (token) {

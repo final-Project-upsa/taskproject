@@ -76,17 +76,19 @@ INSTALLED_APPS = [
     'django.core.mail',
     'django_extensions',
     'drf_spectacular',
-    'corsheaders'
+    'corsheaders',
+    'channels',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'task_app.middleware.tenant.TenantMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -108,6 +110,14 @@ TEMPLATES = [
         },
     },
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
+ASGI_APPLICATION = 'task_app.asgi.application'
 
 WSGI_APPLICATION = 'taskproject.wsgi.application'
 
@@ -179,6 +189,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
@@ -212,3 +227,9 @@ DEFAULT_FROM_EMAIL = 'trust.trade.site@gmail.com'
 
 # Base URL for invitation links
 BASE_URL = 'http://localhost:5173' 
+
+USE_TZ = False
+TIME_ZONE = 'UTC'  
+
+MAX_UPLOAD_SIZE = 5242880  # 5MB
+ALLOWED_UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx']

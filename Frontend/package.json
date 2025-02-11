@@ -16,9 +16,12 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.471.2",
     "react": "^18.3.1",
+    "react-calendar": "^5.1.0",
     "react-dom": "^18.3.1",
+    "react-modal": "^3.16.3",
     "react-router-dom": "^7.1.1",
     "redux": "^5.0.1",
+    "uuid": "^11.0.5",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

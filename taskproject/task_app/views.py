@@ -84,7 +84,7 @@ def register_organization(request):
             'last_name': request.data.get('last_name'),
             'job_title': request.data.get('job_title'),
             'phone_number': request.data.get('phone_number'),
-            'role': 'admin'
+            'role': 'ADMIN'
         }
 
         # Create organization
@@ -238,13 +238,13 @@ def invite_employee(request):
     """
     try:
         # Check if d user can invit another person
-        if request.user.role not in ['admin', 'manager']:
+        if request.user.role not in ['ADMIN', 'MANAGER']:
             return Response({
                 'error': 'Permission denied'
             }, status=status.HTTP_403_FORBIDDEN)
        
         email = request.data.get('email')
-        role = request.data.get('role', 'employee')
+        role = request.data.get('role', 'EMPLOYEE')
         department_id = request.data.get('department')
        
         # Generate invitation token

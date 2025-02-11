@@ -1,16 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Calendar, MessageSquare, Users, Settings } from 'lucide-react';
+import { BarChart3, Calendar, MessageSquare, Users, Settings, GanttChart } from 'lucide-react';
 
 const sidebarLinks = [
   { icon: BarChart3, label: 'Overview', path: '/dashboard' },
   { icon: Calendar, label: 'Tasks', path: '/dashboard/tasks' },
   { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages', badge: 3 },
   { icon: Users, label: 'Team', path: '/dashboard/team' },
+  { icon: GanttChart, label: 'Timeline Calendar', path: '/dashboard/calendar'},
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
 ];
 
-const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
+const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, currentUser }) => {
   const location = useLocation();
 
   return (

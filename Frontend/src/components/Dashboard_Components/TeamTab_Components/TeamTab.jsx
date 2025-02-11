@@ -16,7 +16,7 @@ const TeamTab = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteFormData, setInviteFormData] = useState({
     email: '',
-    role: 'employee',
+    role: 'EMPLOYEE',
     department: ''
   });
   const [inviteError, setInviteError] = useState(null);
@@ -71,7 +71,7 @@ const TeamTab = () => {
       // Reset form and close modal on successful invite
       setInviteFormData({
         email: '',
-        role: 'employee',
+        role: 'EMPLOYEE',
         department: ''
       });
       setIsInviteModalOpen(false);

@@ -20,7 +20,6 @@ from django.utils.http import urlsafe_base64_encode
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.core.exceptions import PermissionDenied
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, TaskPermission])
 def task_list(request):
@@ -32,25 +31,24 @@ def task_list(request):
     
     # Filter tasks based on user role
     if request.user.role in ['ADMIN', 'MANAGER']:
-        # Admins and managers can see:
-        # 1. Tasks they created (even if assigned to someone else)
-        # 2. Tasks assigned to them
-        # 3. Tasks they assigned to others
         tasks = tasks.filter(
-            Q(created_by=request.user) |  # Tasks they created
-            Q(assigned_to=request.user) | # Tasks assigned to them
-            Q(assigned_by=request.user)   # Tasks they assigned to others
+            Q(created_by=request.user) |
+            Q(assigned_to=request.user) |
+            Q(assigned_by=request.user)
         ).distinct()
     else:
-        # Employees can only see:
-        # 1. Tasks they created
-        # 2. Tasks assigned to them
         tasks = tasks.filter(
-            Q(created_by=request.user) |  # Tasks they created
-            Q(assigned_to=request.user)   # Tasks assigned to them
+            Q(created_by=request.user) |
+            Q(assigned_to=request.user)
         ).distinct()
     
-    # Apply additional filters (status, priority, search, etc.)
+    # Calendar-specific date range filtering
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
+    if start_date and end_date:
+        tasks = tasks.filter(due_date__range=[start_date, end_date])
+    
+    # Regular filters
     status_filter = request.query_params.get('status')
     priority_filter = request.query_params.get('priority')
     department_filter = request.query_params.get('department')
@@ -76,65 +74,93 @@ def task_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, TaskPermission])
 def task_create(request):
-    serializer = TaskSerializer(data=request.data)
-    if serializer.is_valid():
-        # Set default status
-        status_value = request.data.get('status', 'TODO')
-        department_id = request.data.get('department')
+    from django.utils import timezone
+    from datetime import datetime
+    
+    try:
+        # Get date and time separately
+        date_str = request.data.get('due_date')
+        time_str = request.data.get('time', '09:00')
         
-        # Handle department-wide assignment
-        if department_id:
-            department = get_object_or_404(Department, id=department_id)
-            if department.organization != request.user.organization:
+        # Combine date and time and make it timezone-aware
+        due_datetime = datetime.strptime(
+            f"{date_str} {time_str}", 
+            '%Y-%m-%d %H:%M'
+        ).replace(tzinfo=timezone.get_current_timezone())
+        
+        # Create new data dictionary with the correct datetime
+        data = {
+            **request.data,
+            'due_date': due_datetime,
+            'time': time_str
+        }
+        
+        serializer = TaskSerializer(data=data)
+        if serializer.is_valid():
+            status_value = request.data.get('status', 'TODO')
+            department_id = request.data.get('department')
+            
+            # Handle department-wide assignment
+            if department_id:
+                department = get_object_or_404(Department, id=department_id)
+                if department.organization != request.user.organization:
+                    return Response(
+                        {"error": "You can only assign tasks to departments in your organization"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                
+                department_members = CustomUser.objects.filter(department=department)
+                created_tasks = []
+                
+                for member in department_members:
+                    task = serializer.save(
+                        organization=request.user.organization,
+                        created_by=request.user,
+                        assigned_by=request.user,
+                        status=status_value,
+                        assigned_to=member,
+                        department=department,
+                        time=request.data.get('time', '09:00'),
+                        duration=request.data.get('duration', 60)
+                    )
+                    created_tasks.append(task)
+                
                 return Response(
-                    {"error": "You can only assign tasks to departments in your organization"},
-                    status=status.HTTP_403_FORBIDDEN
+                    TaskSerializer(created_tasks[0]).data, 
+                    status=status.HTTP_201_CREATED
                 )
             
-            # Get all members of the department
-            department_members = CustomUser.objects.filter(department=department)
-            created_tasks = []
-            
-            # Create a task for each department member
-            for member in department_members:
+            # Handle individual assignment
+            else:
+                assigned_to = None
+                if request.data.get('assigned_to'):
+                    assigned_to = get_object_or_404(
+                        CustomUser, 
+                        id=request.data.get('assigned_to')
+                    )
+                else:
+                    assigned_to = request.user
+                
                 task = serializer.save(
                     organization=request.user.organization,
                     created_by=request.user,
-                    assigned_by=request.user,
                     status=status_value,
-                    assigned_to=member,
-                    department=department
+                    assigned_to=assigned_to,
+                    time=time_str,
+                    duration=request.data.get('duration', 60)
                 )
-                created_tasks.append(task)
-            
-            # Return the first task's data (or you could return all tasks)
-            return Response(
-                TaskSerializer(created_tasks[0]).data, 
-                status=status.HTTP_201_CREATED
-            )
+                
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         
-        # Handle individual assignment
-        else:
-            assigned_to = None
-            if request.data.get('assigned_to'):
-                assigned_to = get_object_or_404(
-                    CustomUser, 
-                    id=request.data.get('assigned_to')
-                )
-            else:
-                # If no assignment specified, assign to creator
-                assigned_to = request.user
-            
-            task = serializer.save(
-                organization=request.user.organization,
-                created_by=request.user,
-                status=status_value,
-                assigned_to=assigned_to
-            )
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except ValueError as e:
+        return Response(
+            {"error": f"Invalid date or time format: {str(e)}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, TaskPermission])

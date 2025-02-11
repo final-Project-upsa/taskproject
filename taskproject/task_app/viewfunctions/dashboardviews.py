@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Prefetch
 from ..models import Department, CustomUser
+from..modeldefinitions.notifications import Notification
+from ..serializers.notificationSerializer import NotificationSerializer
+from django.shortcuts import get_object_or_404
 from ..serializers.department import DepartmentWithMembersSerializer, UserSerializer
 from rest_framework.decorators import api_view, permission_classes
 
@@ -66,20 +69,6 @@ class OrganizationTeamView(generics.ListAPIView):
         })
 
 
-
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def user_dashboard(request):
-#     user = request.user
-#     return Response({
-#         'id': user.id,
-#         'name': user.get_full_name() or user.username,
-#         'email': user.email,
-#         'avatar': user.profile.avatar.url if hasattr(user, 'profile') and user.profile.avatar else None,
-#         # will add more user att herre
-#     })
-
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_dashboard(request):
@@ -109,3 +98,19 @@ def user_dashboard(request):
             {'error': f'Failed to fetch dashboard data: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+        
+        
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def notification_list(request):
+    notifications = Notification.objects.filter(recipient=request.user)
+    serializer = NotificationSerializer(notifications, many=True)
+    return Response(serializer.data)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def mark_notification_read(request, pk):
+    notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+    notification.is_read = True
+    notification.save()
+    return Response({'status': 'marked as read'})

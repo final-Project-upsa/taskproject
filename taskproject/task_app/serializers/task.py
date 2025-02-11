@@ -65,6 +65,6 @@ class TaskSerializer(serializers.ModelSerializer):
             'assigned_by', 'assigned_by_id', 'priority', 'status', 'due_date', 'created_at', 'updated_at', 
             'is_active', 'comments', 'attachments', 'progress_percentage', 
             'last_updated_by', 'last_updated_by_name', 'completion_date',
-            'current_user_id'
+            'current_user_id', 'duration', 'time', 'type',
         ]
         read_only_fields = ['organization', 'created_by', 'created_at', 'updated_at']
