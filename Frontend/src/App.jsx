@@ -12,6 +12,7 @@ import TeamTab from './components/Dashboard_Components/TeamTab_Components/TeamTa
 import TaskExpandPage from './components/Dashboard_Components/TaskTab_Components/TaskExpand_Components/TaskExpandPage';
 import ResponsiveCalendarTab from './components/Dashboard_Components/CalendarTab_Components/ResponsiveCalendarTab';
 import MessageTab from './components/Dashboard_Components/MessageTab_Components/MessageTab';
+import SettingsTab from './components/Dashboard_Components/SettingsTab_Components/SettingsTab';
 
 
 // Protected Route wrapper component
@@ -69,6 +70,7 @@ function App() {
                 <Route path="tasks/expand/:taskID" element={<TaskExpandPage />} />
                 <Route path="calendar" element={<ResponsiveCalendarTab />} />
                 <Route path="messages" element={<MessageTab />} />
+                <Route path="settings" element={<SettingsTab />} />
               </Routes>
             </DashboardLayout>
           </ProtectedRoute>

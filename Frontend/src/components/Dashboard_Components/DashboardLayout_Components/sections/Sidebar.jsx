@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, Calendar, MessageSquare, Users, Settings, GanttChart } from 'lucide-react';
+import api from '../../../../utils/api';
 
 const sidebarLinks = [
   { icon: BarChart3, label: 'Overview', path: '/dashboard' },
   { icon: Calendar, label: 'Tasks', path: '/dashboard/tasks' },
-  { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages', badge: 3 },
+  { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages'},
   { icon: Users, label: 'Team', path: '/dashboard/team' },
   { icon: GanttChart, label: 'Timeline Calendar', path: '/dashboard/calendar'},
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
@@ -13,6 +14,40 @@ const sidebarLinks = [
 
 const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, currentUser }) => {
   const location = useLocation();
+  const [taskStats, setTaskStats] = useState({
+    completed: 0,
+    total: 0,
+    projectProgress: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTaskStats = async () => {
+      try {
+        const response = await api.get('/api/tasks/');
+        const tasks = response.data;
+        
+        const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
+        const totalTasks = tasks.length;
+        
+        // Calculate project progress based on task weights or priorities
+        // This is a simple calculation - you might want to adjust based on your needs
+        const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        
+        setTaskStats({
+          completed: completedTasks,
+          total: totalTasks,
+          projectProgress: Math.round(progress)
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching task stats:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchTaskStats();
+  }, []);
 
   return (
     <aside className={`fixed left-0 z-10 w-64 bg-white border-r transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 ease-in-out top-14 bottom-0`}>
@@ -45,24 +80,40 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, currentUser }) => {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-3">Quick Stats</h3>
             <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Tasks Completed</span>
-                  <span className="font-medium text-gray-900">24/36</span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full">
-                  <div className="h-2 bg-indigo-500 rounded-full" style={{ width: '67%' }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Project Progress</span>
-                  <span className="font-medium text-gray-900">80%</span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full">
-                  <div className="h-2 bg-green-500 rounded-full" style={{ width: '80%' }} />
-                </div>
-              </div>
+              {loading ? (
+                <div className="text-sm text-gray-500">Loading stats...</div>
+              ) : (
+                <>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Tasks Completed</span>
+                      <span className="font-medium text-gray-900">
+                        {taskStats.completed}/{taskStats.total}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-indigo-500 rounded-full" 
+                        style={{ 
+                          width: `${taskStats.total > 0 ? (taskStats.completed / taskStats.total) * 100 : 0}%` 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Project Progress</span>
+                      <span className="font-medium text-gray-900">{taskStats.projectProgress}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-green-500 rounded-full" 
+                        style={{ width: `${taskStats.projectProgress}%` }} 
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

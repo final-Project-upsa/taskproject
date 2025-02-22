@@ -128,8 +128,12 @@ const TaskItem = ({
           {/* Only show assign button for managers/admins */}
           {(userData?.role === 'MANAGER' || userData?.role === 'ADMIN') && (
             <button
-              onClick={() => onAssignTask(task)}
-              className="px-3 py-1 text-sm text-indigo-600 hover:bg-indigo-50 rounded transition-colors duration-150"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTaskSelection(task.id);
+              onAssignTask(task);
+            }}
+            className="px-3 py-1 text-sm text-indigo-600 hover:bg-indigo-50 rounded transition-colors duration-150"
             >
               Assign
             </button>

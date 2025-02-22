@@ -207,6 +207,7 @@ const TaskTab = () => {
         userData={userData}
         onAssignTask={() => setIsAssignModalOpen(true)}
         onExpandTask={handleExpandTask}
+        setSelectedTasks={setSelectedTasks}
       />
 
       {isTaskExpandOpen && expandedTask && (

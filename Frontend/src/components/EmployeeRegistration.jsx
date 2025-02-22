@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { Lock, User, Mail, Phone, Building2 } from 'lucide-react';
+import { Lock, User, Mail, Phone, Building2, Loader } from 'lucide-react';
 
 const EmployeeRegistration = () => {
   const { token } = useParams();
@@ -23,6 +23,19 @@ const EmployeeRegistration = () => {
   const [error, setError] = useState(null);
   const [invitationDetails, setInvitationDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  // Validate form whenever data changes
+  useEffect(() => {
+    const isValid = 
+      formData.username?.trim() !== '' && 
+      formData.password?.trim() !== '' && 
+      formData.confirm_password?.trim() !== '' &&
+      formData.password === formData.confirm_password;
+    
+    setIsFormValid(isValid);
+  }, [formData]);
 
   useEffect(() => {
     const fetchInvitationDetails = async () => {
@@ -59,11 +72,17 @@ const EmployeeRegistration = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Don't proceed if form is invalid or already submitting
+    if (!isFormValid || isSubmitting) return;
+    
     setError(null);
+    setIsSubmitting(true);
 
     // Password validation
     if (formData.password !== formData.confirm_password) {
       setError('Passwords do not match');
+      setIsSubmitting(false);
       return;
     }
 
@@ -86,6 +105,7 @@ const EmployeeRegistration = () => {
     } catch (err) {
       console.error('Full error response:', err.response?.data);
       setError(err.response?.data?.error || 'Registration failed');
+      setIsSubmitting(false);
     }
   };
 
@@ -99,7 +119,7 @@ const EmployeeRegistration = () => {
   }
 
   // Error state
-  if (error) {
+  if (error && !invitationDetails) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white shadow-md rounded-lg p-8 max-w-md w-full">
@@ -167,7 +187,8 @@ const EmployeeRegistration = () => {
               required
               value={formData.username}
               onChange={handleChange}
-              className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+              disabled={isSubmitting}
+              className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Username"
             />
           </div>
@@ -179,7 +200,8 @@ const EmployeeRegistration = () => {
               type="text"
               value={formData.first_name}
               onChange={handleChange}
-              className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+              disabled={isSubmitting}
+              className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="First Name"
             />
             <input
@@ -187,7 +209,8 @@ const EmployeeRegistration = () => {
               type="text"
               value={formData.last_name}
               onChange={handleChange}
-              className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+              disabled={isSubmitting}
+              className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Last Name"
             />
           </div>
@@ -202,7 +225,8 @@ const EmployeeRegistration = () => {
               type="tel"
               value={formData.phone_number}
               onChange={handleChange}
-              className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+              disabled={isSubmitting}
+              className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Phone Number (Optional)"
             />
           </div>
@@ -219,7 +243,8 @@ const EmployeeRegistration = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmitting}
+                className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                 placeholder="Password"
               />
             </div>
@@ -233,7 +258,8 @@ const EmployeeRegistration = () => {
                 required
                 value={formData.confirm_password}
                 onChange={handleChange}
-                className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmitting}
+                className="w-full pl-10 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                 placeholder="Confirm Password"
               />
             </div>
@@ -249,9 +275,17 @@ const EmployeeRegistration = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
+            disabled={!isFormValid || isSubmitting}
+            className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Complete Registration
+            {isSubmitting ? (
+              <>
+                <Loader className="w-5 h-5 mr-2 animate-spin" />
+                Registering...
+              </>
+            ) : (
+              'Complete Registration'
+            )}
           </button>
         </form>
       </div>

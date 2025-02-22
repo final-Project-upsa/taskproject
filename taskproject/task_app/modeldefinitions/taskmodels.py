@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from django.utils import timezone
 
 class TaskPriority(models.TextChoices):
     LOW = 'LOW', 'Low'
@@ -28,7 +29,7 @@ class Task(models.Model):
     department = models.ForeignKey('task_app.Department', on_delete=models.CASCADE, related_name='tasks', null=True, blank=True)  
     created_by = models.ForeignKey('task_app.CustomUser', on_delete=models.CASCADE, related_name='created_tasks')
     assigned_by = models.ForeignKey('task_app.CustomUser',on_delete=models.CASCADE, null=True, related_name='tasks_assigned', blank=True)
-    assigned_to = models.ForeignKey('task_app.CustomUser', on_delete=models.CASCADE, related_name='assigned_tasks', null=True, blank=True) 
+    assigned_to = models.ManyToManyField('task_app.CustomUser', related_name='assigned_tasks', blank=True) 
     priority = models.CharField(max_length=10, choices=TaskPriority.choices, default=TaskPriority.MEDIUM)
     status = models.CharField(max_length=15, choices=TaskStatus.choices, default=TaskStatus.TODO)
     type = models.CharField(max_length=20, choices=TaskType.choices, default=TaskType.PERSONAL)
@@ -79,3 +80,28 @@ class TaskAttachment(models.Model):
 
     def __str__(self):
         return f"{self.file_name} - {self.task.title}"
+    
+
+
+
+class TeamActivity(models.Model):
+    ACTIVITY_TYPES = [
+        ('TASK_COMPLETED', 'Task Completed'),
+        ('TASK_COMMENT', 'Task Comment'),
+        ('FILE_UPLOAD', 'File Upload'),
+        ('TASK_CREATED', 'Task Created'),
+        ('TASK_ASSIGNED', 'Task Assigned'),
+    ]
+
+    user = models.ForeignKey('task_app.CustomUser', on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
+    task = models.ForeignKey('Task', on_delete=models.CASCADE, null=True, blank=True, related_name='activities')
+    comment = models.ForeignKey('TaskComment', on_delete=models.CASCADE, null=True, blank=True)
+    attachment = models.ForeignKey('TaskAttachment', on_delete=models.CASCADE, null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.name} - {self.get_activity_type_display()} at {self.timestamp}"

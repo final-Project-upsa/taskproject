@@ -4,7 +4,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Prefetch
 from ..models import Department, CustomUser
 from..modeldefinitions.notifications import Notification
-from ..serializers.notificationSerializer import NotificationSerializer
 from django.shortcuts import get_object_or_404
 from ..serializers.department import DepartmentWithMembersSerializer, UserSerializer
 from rest_framework.decorators import api_view, permission_classes
@@ -100,17 +99,3 @@ def user_dashboard(request):
         )
         
         
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def notification_list(request):
-    notifications = Notification.objects.filter(recipient=request.user)
-    serializer = NotificationSerializer(notifications, many=True)
-    return Response(serializer.data)
-
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-def mark_notification_read(request, pk):
-    notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
-    notification.is_read = True
-    notification.save()
-    return Response({'status': 'marked as read'})

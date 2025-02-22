@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'rest_framework.authtoken',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -233,3 +234,19 @@ TIME_ZONE = 'UTC'
 
 MAX_UPLOAD_SIZE = 5242880  # 5MB
 ALLOWED_UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx']
+
+GRAPH_MODELS = {
+    'all_applications': True,
+    'graph_models': {
+        'app_labels': ["task_app"],
+        'use_pydot': True,
+    },
+}
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'  # Use your timezone

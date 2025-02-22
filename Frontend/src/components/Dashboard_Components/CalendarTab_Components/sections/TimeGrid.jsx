@@ -73,12 +73,12 @@ export const TimeGrid = ({ date, timeSlots, tasks, onCellClick }) => {
           >
             {isCurrentHour && (
               <div 
-                className="absolute left-0 w-full border-t-2 border-red-400 z-10"
+                className="absolute top-0 h-full border-l-2 border-red-400 z-10"
                 style={{
-                  top: `${(currentMinutes / 60) * 100}%`
+                  left: `${(currentMinutes / 60) * 100}%`
                 }}
               >
-                <div className="absolute -left-1 -top-1.5 w-3 h-3 rounded-full bg-red-400" />
+                <div className="absolute -top-1 -left-1.5 w-3 h-3 rounded-full bg-red-400" />
               </div>
             )}
           </div>

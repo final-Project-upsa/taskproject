@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Q, Count
 from ..models import CustomUser, Department
-from ..modeldefinitions.taskmodels import Task, TaskComment, TaskAttachment
-from ..serializers.task import TaskSerializer, TaskCommentSerializer, TaskAttachmentSerializer
+from ..modeldefinitions.taskmodels import Task, TaskComment, TaskAttachment, TeamActivity
+from ..serializers.task import TaskSerializer, TaskCommentSerializer, TaskAttachmentSerializer, TeamActivitySerializer
 from ..permissions import TaskPermission
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -19,6 +19,18 @@ from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.core.exceptions import PermissionDenied
+from rest_framework import generics
+
+class TeamActivityListView(generics.ListAPIView):
+    serializer_class = TeamActivitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Fetch activities for the current user's organization
+        return TeamActivity.objects.filter(
+            task__organization=self.request.user.organization
+        ).order_by('-timestamp')[:20]  # Limit to the last 20 activities
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, TaskPermission])
@@ -33,13 +45,13 @@ def task_list(request):
     if request.user.role in ['ADMIN', 'MANAGER']:
         tasks = tasks.filter(
             Q(created_by=request.user) |
-            Q(assigned_to=request.user) |
+            Q(assigned_to__in=[request.user]) |
             Q(assigned_by=request.user)
         ).distinct()
     else:
         tasks = tasks.filter(
             Q(created_by=request.user) |
-            Q(assigned_to=request.user)
+            Q(assigned_to__in=[request.user])
         ).distinct()
     
     # Calendar-specific date range filtering
@@ -66,7 +78,7 @@ def task_list(request):
             Q(description__icontains=search_query)
         )
     
-    serializer = TaskSerializer(tasks, many=True)
+    serializer = TaskSerializer(tasks, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -95,10 +107,11 @@ def task_create(request):
             'time': time_str
         }
         
-        serializer = TaskSerializer(data=data)
+        serializer = TaskSerializer(data=data, context={'request': request})
         if serializer.is_valid():
             status_value = request.data.get('status', 'TODO')
             department_id = request.data.get('department')
+            assigned_to_ids = request.data.get('assigned_to', [])
             
             # Handle department-wide assignment
             if department_id:
@@ -110,47 +123,26 @@ def task_create(request):
                     )
                 
                 department_members = CustomUser.objects.filter(department=department)
-                created_tasks = []
-                
-                for member in department_members:
-                    task = serializer.save(
-                        organization=request.user.organization,
-                        created_by=request.user,
-                        assigned_by=request.user,
-                        status=status_value,
-                        assigned_to=member,
-                        department=department,
-                        time=request.data.get('time', '09:00'),
-                        duration=request.data.get('duration', 60)
-                    )
-                    created_tasks.append(task)
-                
-                return Response(
-                    TaskSerializer(created_tasks[0]).data, 
-                    status=status.HTTP_201_CREATED
-                )
+                assigned_to_ids = [member.id for member in department_members]
             
             # Handle individual assignment
-            else:
-                assigned_to = None
-                if request.data.get('assigned_to'):
-                    assigned_to = get_object_or_404(
-                        CustomUser, 
-                        id=request.data.get('assigned_to')
-                    )
-                else:
-                    assigned_to = request.user
-                
-                task = serializer.save(
-                    organization=request.user.organization,
-                    created_by=request.user,
-                    status=status_value,
-                    assigned_to=assigned_to,
-                    time=time_str,
-                    duration=request.data.get('duration', 60)
-                )
-                
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            elif not assigned_to_ids:
+                assigned_to_ids = [request.user.id]
+            
+            # Create the task
+            task = serializer.save(
+                organization=request.user.organization,
+                created_by=request.user,
+                assigned_by=request.user,
+                status=status_value,
+                time=time_str,
+                duration=request.data.get('duration', 60)
+            )
+            
+            # Assign the task to multiple users
+            task.assigned_to.set(assigned_to_ids)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -313,40 +305,32 @@ def download_task_attachment(request, attachment_id):
 
     try:
         attachment = TaskAttachment.objects.get(id=attachment_id)
-        task = attachment.task
-        
-        # Auto-update status to IN_PROGRESS if it's in TODO
-        if task.status == 'TODO':
-            task.status = 'IN_PROGRESS'
-            task.save()
-
     except TaskAttachment.DoesNotExist:
         return Response(
             {"error": "Attachment not found"},
             status=404
         )
 
-    # Improved content type handling
-    file_name = attachment.file_name.lower()
-    if file_name.endswith('.pdf'):
-        content_type = 'application/pdf'
-    elif file_name.endswith('.txt'):
-        content_type = 'text/plain'
-    else:
-        content_type = mimetypes.guess_type(attachment.file.name)[0] or 'application/octet-stream'
+    # Get the actual file content type
+    content_type = None
+    if attachment.file_name:
+        content_type = mimetypes.guess_type(attachment.file_name)[0]
+    if not content_type:
+        content_type = 'application/octet-stream'
 
     try:
+        # Use FileResponse for streaming the file
         response = FileResponse(
             attachment.file.open('rb'),
             content_type=content_type,
             as_attachment=True,
             filename=attachment.file_name
         )
-        # Add CORS headers
-        response['Access-Control-Allow-Origin'] = '*'
-        response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-        response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        
+        # Add necessary headers
+        response['Content-Disposition'] = f'attachment; filename="{attachment.file_name}"'
         return response
+        
     except Exception as e:
         return Response(
             {"error": f"Error accessing file: {str(e)}"},

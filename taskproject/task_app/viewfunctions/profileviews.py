@@ -3,7 +3,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from ..serializers.profile import UserProfileSerializer, ChangePasswordSerializer
-from ..serializers.user import UserSerializer
+from ..serializers.user import UserSerializer, NotificationSerializer
+from rest_framework import generics
+from ..modeldefinitions.notifications import Notification
 
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
@@ -49,3 +51,15 @@ def current_user(request):
     user = request.user
     serializer = UserSerializer(user)
     return Response(serializer.data)
+
+
+
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Fetch notifications for the current user
+        return Notification.objects.filter(
+            user=self.request.user
+        ).order_by('-timestamp')

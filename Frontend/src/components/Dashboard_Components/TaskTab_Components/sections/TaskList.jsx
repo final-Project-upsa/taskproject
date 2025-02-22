@@ -1,7 +1,7 @@
   import React from 'react';
   import TaskItem from './TaskItem';
 
-  const TaskList = ({ tasks, selectedTasks, toggleTaskSelection, userData, onAssignTask,  }) => {
+  const TaskList = ({ tasks, selectedTasks, toggleTaskSelection, userData, onAssignTask, setSelectedTasks }) => {
 
     return (
       <div className="bg-white border rounded">

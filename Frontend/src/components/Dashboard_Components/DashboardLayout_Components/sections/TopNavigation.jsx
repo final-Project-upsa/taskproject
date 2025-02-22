@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import useNotificationStore from '../../../../stores/NotificationStore';
@@ -11,6 +11,7 @@ const TopNavigation = ({ userData, isSidebarOpen, setIsSidebarOpen, handleLogout
   const notificationRef = useRef(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifications, unreadCount, markAllAsRead } = useNotificationStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -89,7 +90,12 @@ const TopNavigation = ({ userData, isSidebarOpen, setIsSidebarOpen, handleLogout
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5">
                 <div className="py-1">
                   <div className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Profile</div>
-                  <div className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Settings</div>
+                  <div 
+                    className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => navigate('/dashboard/settings')}
+                  >
+                    Settings
+                  </div>
                   <div className="border-t border-gray-100"></div>
                   <div
                     className="px-4 py-2 text-sm text-red-600 hover:bg-gray-100 cursor-pointer flex items-center"

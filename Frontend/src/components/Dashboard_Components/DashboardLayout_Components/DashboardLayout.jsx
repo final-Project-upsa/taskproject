@@ -9,6 +9,8 @@ import api from '../../../utils/api';
 import useChatStore from '../../../stores/chatStore';
 import useNotificationStore from '../../../stores/NotificationStore';
 import NotificationPopup from '../Add-ons/NotificationPopup';
+import TaskTimeNotifications from '../../TaskTimeNotifications';
+import UnifiedNotifications from '../Add-ons/UnifiedNotifications';
 
 const fetchCurrentUser = async () => {
   try {
@@ -219,14 +221,22 @@ const DashboardLayout = ({ children }) => {
             />
           )}
           <div className="max-w-7xl mx-auto">
-          {React.cloneElement(children, { currentUser })} 
+          {React.cloneElement(children, { currentUser })}
+          <UnifiedNotifications
+            chatNotification={activeNotification ? {
+              title: activeNotification.title,
+              message: activeNotification.message
+            } : null}
+            onChatNotificationClose={() => setActiveNotification(null)}
+          />
+          {/* <TaskTimeNotifications/>  */}
           </div>
-          {activeNotification && (
+          {/* {activeNotification && (
             <NotificationPopup
               message={`${activeNotification.title}: ${activeNotification.message}`}
               onClose={() => setActiveNotification(null)}
             />
-          )}
+          )} */}
           <footer className="text-center text-sm text-gray-500 mt-8">
             Powered by EnterpriseSync
           </footer>

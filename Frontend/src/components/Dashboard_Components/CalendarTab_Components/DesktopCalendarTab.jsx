@@ -24,6 +24,22 @@ const DesktopCalendarTab = () => {
     department: null
   });
 
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await api.get('/api/current-user/');
+      setCurrentUser(response.data); // Set the current user data
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  // Fetch the current user when the component mounts
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
   // Generate 24-hour time slots (00:00 to 23:00)
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
     return `${i.toString().padStart(2, '0')}:00`;
@@ -39,7 +55,7 @@ const DesktopCalendarTab = () => {
       dates.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }
-    console.log('All week dates:', dates.map(d => d.toISOString()));
+    // console.log('All week dates:', dates.map(d => d.toISOString()));
     return dates;
   };
 
@@ -211,6 +227,7 @@ const DesktopCalendarTab = () => {
           setNewTask={setNewTask}
           onClose={() => setSelectedCell(null)}
           onSubmit={handleCreateTask}
+          currentUser={currentUser}
         />
       )}
     </div>

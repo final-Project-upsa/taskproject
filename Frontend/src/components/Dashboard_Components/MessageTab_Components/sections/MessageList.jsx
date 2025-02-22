@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { File, MoreVertical, Copy, Check, Plus } from 'lucide-react';
-import api from '../../../../utils/api'
+import { File, MoreVertical, Copy, Check, Plus, ExternalLink } from 'lucide-react';
+import api from '../../../../utils/api';
 import TaskModal from './TaskModal';
 
 const MessageList = ({ messages, currentUser, isGroupChat }) => {
@@ -11,7 +11,6 @@ const MessageList = ({ messages, currentUser, isGroupChat }) => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [userData, setUserData] = useState(null);
-
 
   useEffect(() => {
     fetchUserData();
@@ -124,6 +123,59 @@ const MessageList = ({ messages, currentUser, isGroupChat }) => {
     );
   };
 
+  const renderTaskCard = (title, link) => (
+    <div className="mt-2 max-w-sm">
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-col gap-2 bg-indigo-50 rounded-lg p-4 hover:bg-indigo-100 transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-indigo-700">Task Shared</span>
+          <ExternalLink size={16} className="text-indigo-500" />
+        </div>
+        <p className="text-sm text-gray-800">{title}</p>
+        <span className="text-xs text-indigo-600">Click to open task →</span>
+      </a>
+    </div>
+  );
+
+  const processMessageContent = (content) => {
+    const taskLinkRegex = /\[Task: (.*?)\]\((.*?)\)/g;
+    let lastIndex = 0;
+    const parts = [];
+    let match;
+
+    while ((match = taskLinkRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(
+          <span key={`text-${lastIndex}`}>
+            {content.slice(lastIndex, match.index)}
+          </span>
+        );
+      }
+
+      parts.push(
+        <React.Fragment key={`task-${match.index}`}>
+          {renderTaskCard(match[1], match[2])}
+        </React.Fragment>
+      );
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(
+        <span key={`text-${lastIndex}`}>
+          {content.slice(lastIndex)}
+        </span>
+      );
+    }
+
+    return parts.length > 0 ? parts : content;
+  };
+
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedMessageId(text);
@@ -172,20 +224,6 @@ const MessageList = ({ messages, currentUser, isGroupChat }) => {
     </div>
   );
 
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const response = await api.get('/api/organization/team/');
-        setDepartments(response.data.departments);
-      } catch (error) {
-        console.error('Error fetching departments:', error);
-      }
-    };
-
-    fetchDepartments();
-  }, []);
-
-
   const handleCreateTask = async (taskData) => {
     try {
       const response = await api.post('/api/tasks/create/', {
@@ -232,9 +270,9 @@ const MessageList = ({ messages, currentUser, isGroupChat }) => {
                         ? 'bg-indigo-600 text-white rounded-tr-none'
                         : 'bg-gray-100 text-gray-800 rounded-tl-none'
                     }`}>
-                      <p className="text-sm whitespace-pre-line break-all">
-                        {message.content}
-                      </p>
+                      <div className="text-sm whitespace-pre-line break-all">
+                        {processMessageContent(message.content)}
+                      </div>
                     </div>
                     {renderMessageMenu(message, isOwnMessage)}
                   </div>

@@ -33,6 +33,7 @@ urlpatterns = [
     path('profile/', profileviews.manage_profile, name='manage-profile'),
     path('profile/change-password/', profileviews.change_password, name='change-password'),
     path('current-user/', profileviews.current_user, name='current_user'),
+    path('notifications/', profileviews.NotificationListView.as_view(), name='notifications'),
     #=============================================================================================================
     
     #==============================DEPARTMENTS MANAGER============================================================
@@ -54,6 +55,7 @@ urlpatterns = [
     path('tasks/<int:task_id>/assign/', taskviews.assign_task, name='assign-task'), 
     path('tasks/attachments/<int:attachment_id>/download/', taskviews.download_task_attachment, name='download-task-attachment'),
     path('tasks/attachments/<int:attachment_id>/download-url/', taskviews.generate_signed_download_url, name='download-attachment'),
+    path('team-activity/', taskviews.TeamActivityListView.as_view(), name='team-activity'),
     #=============================================================================================================
 
     #==============================Dashboard==================================================================

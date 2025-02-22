@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..modeldefinitions.taskmodels import Task, TaskAttachment, TaskComment, TaskPriority
+from ..modeldefinitions.taskmodels import Task, TaskAttachment, TaskComment, TeamActivity
 from django.core.signing import TimestampSigner
 from django.utils.http import urlsafe_base64_encode
 from django.urls import reverse
@@ -39,16 +39,22 @@ class TaskCommentSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     comments = TaskCommentSerializer(many=True, read_only=True)
     attachments = TaskAttachmentSerializer(many=True, read_only=True)
-    assigned_to_name = serializers.CharField(source='assigned_to.full_name', read_only=True)
+    assigned_to_name = serializers.SerializerMethodField()
     created_by_name = serializers.CharField(source='created_by.full_name', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
     progress_percentage = serializers.IntegerField(read_only=True)
     last_updated_by_name = serializers.CharField(source='last_updated_by.full_name', read_only=True)
     completion_date = serializers.DateTimeField(read_only=True)
     created_by_id = serializers.IntegerField(source='created_by.id', read_only=True)
-    assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True)
+    assigned_to_id = serializers.SerializerMethodField()
     assigned_by_id = serializers.IntegerField(source='assigned_by.id', read_only=True)
     current_user_id = serializers.SerializerMethodField()
+
+    def get_assigned_to_name(self, obj):
+        return [user.full_name for user in obj.assigned_to.all()]
+
+    def get_assigned_to_id(self, obj):
+        return [user.id for user in obj.assigned_to.all()]
 
     def get_current_user_id(self, obj):
         request = self.context.get('request')
@@ -68,3 +74,14 @@ class TaskSerializer(serializers.ModelSerializer):
             'current_user_id', 'duration', 'time', 'type',
         ]
         read_only_fields = ['organization', 'created_by', 'created_at', 'updated_at']
+        
+
+class TeamActivitySerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    task = serializers.StringRelatedField()
+    comment = serializers.StringRelatedField()
+    attachment = serializers.StringRelatedField()
+
+    class Meta:
+        model = TeamActivity
+        fields = ['id', 'user', 'activity_type', 'task', 'comment', 'attachment', 'timestamp']

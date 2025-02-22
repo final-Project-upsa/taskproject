@@ -37,33 +37,32 @@ const TaskAttachments = ({ task, setTask }) => {
     setDownloadingFiles(prev => ({ ...prev, [attachment.id]: true }));
   
     try {
-      // Get a signed URL first
+      // Get the signed URL
       const response = await api.get(`/api/tasks/attachments/${attachment.id}/download-url/`);
       const { signed_url } = response.data;
       
-  
-      // Use native fetch with credentials
-      const fileResponse = await fetch(signed_url, {
+      const fileResponse = await api.get(signed_url, {
+        responseType: 'blob', 
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          'Accept': 'application/pdf,application/octet-stream,text/plain'
+          'Accept': '*/*'  // Accept any content type
         }
       });
       
-      console.log('Download URL:', signed_url);
-      console.log('Content type:', await fileResponse.headers.get('content-type'));
-      
-      const blob = await fileResponse.blob();
+      // Create blob URL and trigger download
+      const blob = new Blob([fileResponse.data], { 
+        type: fileResponse.headers['content-type'] || 'application/octet-stream'
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', attachment.file_name);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
+      alert('Error downloading file. Please try again.');
     } finally {
       setDownloadingFiles(prev => ({ ...prev, [attachment.id]: false }));
     }
